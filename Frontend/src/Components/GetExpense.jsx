@@ -1,19 +1,20 @@
 import React, { useState } from "react";
-import { useAuth } from "../providers/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { useAuth } from "../providers/AuthContext";
 import ExpenseTable from "./ExpenseTable";
 
-const categories = ["Food", "Transport", "Shopping", "Medical", "Others"];
-
-const ExpenseContainer = () => {
+const ExpenseManager = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [editData, setEditData] = useState(null);
+
+  // Filter states
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Fetch expenses
-  const { data: expenses = [] } = useQuery({
+  const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["expenses", user?._id],
     queryFn: async () => {
       const { data } = await axios.get(
@@ -24,119 +25,55 @@ const ExpenseContainer = () => {
     enabled: !!user?._id,
   });
 
-  const handleDelete = (id) => deleteMutation.mutate(id);
+  // Apply filters
+  const filteredExpenses = expenses.filter((exp) => {
+    const matchesCategory = !categoryFilter || exp.category === categoryFilter;
 
-  // Delete
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      await axios.delete(`http://localhost:5000/deleteExpense/${id}`);
-    },
-    onSuccess: () => {
-      toast.success("Expense deleted");
-      queryClient.invalidateQueries(["expenses", user?._id]);
-    },
-    onError: () => toast.error("Failed to delete"),
+    const matchesDate =
+      (!startDate || new Date(exp.date) >= new Date(startDate)) &&
+      (!endDate || new Date(exp.date) <= new Date(endDate));
+
+    return matchesCategory && matchesDate;
   });
 
-  // Edit open modal
-  const handleEdit = (expense) => {
-    setEditData(expense);
-    document.getElementById("expense_modal").showModal();
-  };
-
-  // Update
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const { data } = await axios.patch(
-        `http://localhost:5000/updateExpense/${editData._id}`,
-        {
-          title: editData.title,
-          amount: editData.amount,
-          category: editData.category,
-          date: editData.date,
-        }
-      );
-      return data;
-    },
-    onSuccess: () => {
-      toast.success("Expense updated");
-      queryClient.invalidateQueries(["expenses", user?._id]);
-      document.getElementById("expense_modal").close();
-    },
-    onError: () => toast.error("Failed to update expense"),
-  });
+  if (isLoading) return <p>Loading...</p>;
 
   return (
-    <div className="py-16 px-32">
-      <ExpenseTable
-        expenses={expenses}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+    <div className="p-6">
+      {/* Filter Controls */}
+      <div className="flex justify-center gap-4  py-16">
+        <select
+          className="select select-bordered"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="">All Categories</option>
+          <option value="Transport">Transport</option>
+          <option value="Food">Food</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Medical">Medical</option>
+          <option value="Others">Others</option>
+        </select>
 
-      {/* Modal */}
-      <dialog id="expense_modal" className="modal">
-        <div className="modal-box max-w-2xl">
-          <h3 className="font-bold text-xl mb-4">Update Expense</h3>
-          {editData && (
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={editData.title}
-                onChange={(e) =>
-                  setEditData({ ...editData, title: e.target.value })
-                }
-                className="input input-bordered w-full"
-                placeholder="Title"
-              />
-              <input
-                type="number"
-                value={editData.amount}
-                onChange={(e) =>
-                  setEditData({ ...editData, amount: e.target.value })
-                }
-                className="input input-bordered w-full"
-                placeholder="Amount"
-              />
-              <select
-                className="input input-bordered w-full"
-                value={editData.category}
-                onChange={(e) =>
-                  setEditData({ ...editData, category: e.target.value })
-                }
-              >
-                <option value="">Select category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="date"
-                value={editData.date}
-                onChange={(e) =>
-                  setEditData({ ...editData, date: e.target.value })
-                }
-                className="input input-bordered w-full"
-              />
-            </div>
-          )}
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn">Cancel</button>
-            </form>
-            <button
-              className="btn btn-primary"
-              onClick={() => updateMutation.mutate()}
-            >
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </dialog>
+        <input
+          type="date"
+          className="input input-bordered"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+
+        <input
+          type="date"
+          className="input input-bordered"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
+      </div>
+
+      {/* Expense Table */}
+      <ExpenseTable expenses={filteredExpenses} queryClient={queryClient} />
     </div>
   );
 };
 
-export default ExpenseContainer;
+export default ExpenseManager;
