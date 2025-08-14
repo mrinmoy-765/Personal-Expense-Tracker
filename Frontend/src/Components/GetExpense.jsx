@@ -39,8 +39,7 @@ const ExpenseManager = () => {
 
   return (
     <div className="p-6">
-      {/* Filter Controls */}
-      <div className="flex justify-center gap-4  py-16">
+      <div className="flex justify-center gap-4  pt-8 pb-16">
         <select
           className="select select-bordered"
           value={categoryFilter}

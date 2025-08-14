@@ -199,6 +199,25 @@ async function run() {
       }
     });
 
+    // Get total expense for a user
+    app.get("/totalExpense/:uid", async (req, res) => {
+      const userId = req.params.uid;
+
+      try {
+        const totalResult = await PET_expenseCollection.aggregate([
+          { $match: { userId } },
+          { $group: { _id: null, total: { $sum: { $toDouble: "$amount" } } } },
+        ]).toArray();
+
+        const total = totalResult[0]?.total || 0;
+
+        res.json({ total });
+      } catch (error) {
+        console.error("Error fetching total expense:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
