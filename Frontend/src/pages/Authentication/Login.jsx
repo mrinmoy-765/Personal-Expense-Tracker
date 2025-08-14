@@ -1,14 +1,15 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../providers/AuthContext";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 
 export default function Login() {
   const { setUser } = useAuth();
   const navigate = useNavigate();
+  const axiosSecure = useAxiosSecure();
 
   const {
     register,
@@ -18,19 +19,16 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: async (formData) => {
-      const { data } = await axios.post(
-        "http://localhost:5000/login",
-        formData
-      );
+      const { data } = await axiosSecure.post("/login", formData);
       return data;
     },
     onSuccess: (data) => {
-      toast.success("Login successful");
+      toast.success(data.message || "Login successful");
       setUser(data.user);
       navigate("/dashboard");
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || "Invalid credentials");
+      toast.error(error.response?.data || "Invalid credentials");
     },
   });
 

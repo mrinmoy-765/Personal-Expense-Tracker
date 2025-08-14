@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { useAuth } from "../providers/AuthContext";
 import ExpenseTable from "./ExpenseTable";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const ExpenseManager = () => {
   const { user } = useAuth();
+  const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
 
   // Filter states
@@ -17,9 +18,7 @@ const ExpenseManager = () => {
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["expenses", user?._id],
     queryFn: async () => {
-      const { data } = await axios.get(
-        `http://localhost:5000/getExpenses/${user?._id}`
-      );
+      const { data } = await axiosSecure.get(`/getExpenses/${user?._id}`);
       return data;
     },
     enabled: !!user?._id,

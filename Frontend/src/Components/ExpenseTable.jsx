@@ -1,21 +1,22 @@
 import React from "react";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useAuth } from "../providers/AuthContext";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const categories = ["Food", "Transport", "Shopping", "Medical", "Others"];
 
 const ExpenseTable = ({ expenses, queryClient }) => {
   const { user } = useAuth();
+  const axiosSecure = useAxiosSecure();
   const [editData, setEditData] = useState(null);
 
   //delete
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      await axios.delete(`http://localhost:5000/deleteExpense/${id}`);
+      await axiosSecure.delete(`deleteExpense/${id}`);
     },
     onSuccess: () => {
       toast.success("Expense deleted");
@@ -32,8 +33,8 @@ const ExpenseTable = ({ expenses, queryClient }) => {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await axios.patch(
-        `http://localhost:5000/updateExpense/${editData._id}`,
+      const { data } = await axiosSecure.patch(
+        `/updateExpense/${editData._id}`,
         {
           title: editData.title,
           amount: editData.amount,

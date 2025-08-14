@@ -1,15 +1,16 @@
 import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { useAuth } from "../providers/AuthContext";
 import { useForm } from "react-hook-form";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const categories = ["Food", "Transport", "Shopping", "Medical", "Others"];
 
 const AddExpense = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const axiosSecure = useAxiosSecure();
 
   const {
     register,
@@ -20,7 +21,7 @@ const AddExpense = () => {
 
   const mutation = useMutation({
     mutationFn: async (formData) => {
-      return await axios.post("http://localhost:5000/addExpense", {
+      return await axiosSecure.post("/addExpense", {
         ...formData,
         userId: user._id,
       });

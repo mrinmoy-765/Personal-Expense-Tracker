@@ -1,22 +1,20 @@
-//port bcrypt from "bcrypt";
 const express = require("express");
-//const jwt = require("jsonwebtoken");
-//const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
 require("dotenv").config();
-//const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // Allow frontend origin
 // CORS
 //middleware
-//app.use(cookieParser());
+app.use(cookieParser());
 app.use(
   cors({
     origin: ["http://localhost:5173"],
-    // credentials: true,
+    credentials: true,
   })
 );
 
@@ -47,10 +45,23 @@ async function run() {
       .db("PersonalExpenseTracker")
       .collection("expenses");
 
+    const verifyToken = (req, res, next) => {
+      const token = req.cookies.accessToken;
+      // console.log("inside verify token", token);
+
+      if (!token) return res.status(401).send("Unauthorized");
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(403).send("Forbidden");
+        req.user = decoded;
+        console.log("Decoded JWT:", decoded);
+        next();
+      });
+    };
+
     //create user
     app.post("/register", async (req, res) => {
       try {
-        console.log("hitted");
         const { username, password } = req.body;
 
         const existingUser = await PET_userCollection.findOne({ username });
@@ -92,6 +103,21 @@ async function run() {
             .json({ message: "Invalid username or password" });
         }
 
+        // generate JWT
+        const token = jwt.sign(
+          { id: user._id, email: user.email },
+          process.env.JWT_SECRET,
+          { expiresIn: "7d" }
+        );
+
+        // send as HTTP-only cookie
+        res.cookie("accessToken", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
         res.json({
           message: "Login successful",
           user: { _id: user._id, username: user.username },
@@ -102,7 +128,7 @@ async function run() {
     });
 
     //add expense
-    app.post("/addExpense", async (req, res) => {
+    app.post("/addExpense", verifyToken, async (req, res) => {
       const newExpense = {
         ...req.body,
         createdAt: new Date(),
@@ -118,7 +144,7 @@ async function run() {
     });
 
     //get expenses
-    app.get("/getExpenses/:uid", async (req, res) => {
+    app.get("/getExpenses/:uid", verifyToken, async (req, res) => {
       const userId = req.params.uid;
       try {
         const expenses = await PET_expenseCollection.find({ userId }).toArray();
@@ -131,7 +157,7 @@ async function run() {
     });
 
     //delete expense
-    app.delete("/deleteExpense/:id", async (req, res) => {
+    app.delete("/deleteExpense/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
@@ -145,7 +171,7 @@ async function run() {
     });
 
     // Update expense
-    app.patch("/updateExpense/:id", async (req, res) => {
+    app.patch("/updateExpense/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const { title, amount, category, date } = req.body;
 
