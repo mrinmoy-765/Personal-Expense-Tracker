@@ -1,14 +1,15 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
-import { useMutation } from "@tanstack/react-query";
+import React from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { useAuth } from "../providers/AuthContext";
+import { useForm } from "react-hook-form";
 
 const categories = ["Food", "Transport", "Shopping", "Medical", "Others"];
 
 const AddExpense = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -17,23 +18,20 @@ const AddExpense = () => {
     formState: { errors },
   } = useForm();
 
-  const [expenses, setExpenses] = useState([]);
-
   const mutation = useMutation({
     mutationFn: async (formData) => {
-      const { data } = await axios.post("http://localhost:5000/addExpense", {
-        ...formData, // title, amount, category, date
-        userId: user._id, // include logged-in user ID
+      return await axios.post("http://localhost:5000/addExpense", {
+        ...formData,
+        userId: user._id,
       });
-      return data;
     },
-    onSuccess: (data) => {
-      toast.success("Expense added successfully!");
-      setExpenses((prev) => [...prev, data.expense]);
+    onSuccess: () => {
+      toast.success("Expense added successfully");
+      queryClient.invalidateQueries(["expenses", user._id]);
       reset();
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to add expense!");
+    onError: () => {
+      toast.error("Failed to add expense");
     },
   });
 

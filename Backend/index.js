@@ -130,6 +130,20 @@ async function run() {
       }
     });
 
+    //delete expense
+    app.delete("/deleteExpense/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await PET_expenseCollection.deleteOne(query);
+
+        res.json(result);
+      } catch (err) {
+        console.error("Delete error:", err);
+        res.status(500).json({ message: "Server error", error: err.message });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
