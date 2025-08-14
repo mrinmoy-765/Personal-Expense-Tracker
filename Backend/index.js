@@ -14,8 +14,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 //app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost/5000"],
-    credentials: true,
+    origin: ["http://localhost:5173"],
+    // credentials: true,
   })
 );
 
@@ -37,6 +37,37 @@ async function run() {
   try {
     // Connect the client to the server (optional starting in v4.7)
     await client.connect();
+
+    const PET_userCollection = client
+      .db("PersonalExpenseTracker")
+      .collection("users");
+
+    //create user
+    app.post("/register", async (req, res) => {
+      try {
+        console.log("hitted");
+        const { username, password } = req.body;
+
+        const existingUser = await PET_userCollection.findOne({ username });
+        if (existingUser) {
+          return res.status(409).json({ message: "Username already taken" });
+        }
+
+        const result = await PET_userCollection.insertOne({
+          username,
+          password,
+          createdAt: new Date(),
+        });
+
+        res.status(201).json({
+          message: "User registered successfully",
+          userId: result.insertedId,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

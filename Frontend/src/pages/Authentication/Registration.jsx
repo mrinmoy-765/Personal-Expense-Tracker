@@ -20,7 +20,7 @@ export default function Registation() {
   const mutation = useMutation({
     mutationFn: async (formData) => {
       const { data } = await axios.post(
-        "http://localhost/5000/register",
+        "http://localhost:5000/register",
         formData
       );
       return data;
