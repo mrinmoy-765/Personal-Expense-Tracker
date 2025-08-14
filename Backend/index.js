@@ -43,6 +43,10 @@ async function run() {
       .db("PersonalExpenseTracker")
       .collection("users");
 
+    const PET_expenseCollection = client
+      .db("PersonalExpenseTracker")
+      .collection("expenses");
+
     //create user
     app.post("/register", async (req, res) => {
       try {
@@ -94,6 +98,22 @@ async function run() {
         });
       } catch (error) {
         res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    //add expense
+    app.post("/addExpense", async (req, res) => {
+      const newExpense = {
+        ...req.body,
+        createdAt: new Date(),
+      };
+
+      try {
+        const result = await PET_expenseCollection.insertOne(newExpense);
+        res.send(result);
+      } catch (error) {
+        console.error("Failed to insert Expense:", error);
+        res.status(500).send({ error: "Insertion failed" });
       }
     });
 
