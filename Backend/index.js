@@ -144,6 +144,35 @@ async function run() {
       }
     });
 
+    // Update expense
+    app.patch("/updateExpense/:id", async (req, res) => {
+      const id = req.params.id;
+      const { title, amount, category, date } = req.body;
+
+      try {
+        const result = await PET_expenseCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              title,
+              amount,
+              category,
+              date,
+            },
+          }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ error: "Expense not found" });
+        }
+
+        res.json({ message: "Expense updated successfully", result });
+      } catch (err) {
+        console.error("Update error:", err);
+        res.status(500).json({ error: "Failed to update expense" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(

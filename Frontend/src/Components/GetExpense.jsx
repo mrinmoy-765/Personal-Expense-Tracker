@@ -1,15 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "../providers/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 
+const categories = ["Food", "Transport", "Shopping", "Medical", "Others"];
+
 const GetExpense = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [editData, setEditData] = useState(null);
 
-  //get expenses
+  // Fetch
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["expenses", user?._id],
     queryFn: async () => {
@@ -18,7 +21,7 @@ const GetExpense = () => {
       );
       return data;
     },
-    enabled: !!user?._id, // Only run if userId exists
+    enabled: !!user?._id,
   });
 
   // Delete
@@ -33,10 +36,32 @@ const GetExpense = () => {
     onError: () => toast.error("Failed to delete expense"),
   });
 
-  // Edit
+  // Update
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await axios.patch(
+        `http://localhost:5000/updateExpense/${editData._id}`,
+        {
+          title: editData.title,
+          amount: editData.amount,
+          category: editData.category,
+          date: editData.date,
+        }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Expense updated");
+      queryClient.invalidateQueries(["expenses", user?._id]);
+      document.getElementById("expense_modal").close();
+    },
+    onError: () => toast.error("Failed to update expense"),
+  });
+
+  // Open edit modal
   const editExpense = (expense) => {
-    console.log("Editing:", expense);
-    //  modal
+    setEditData({ ...expense });
+    document.getElementById("expense_modal").showModal();
   };
 
   if (isLoading) {
@@ -65,8 +90,7 @@ const GetExpense = () => {
                   <td>{expense.title}</td>
                   <td>{expense.amount}</td>
                   <td>
-                    <div className="badge badge-soft  badge-primary">
-                      {" "}
+                    <div className="badge badge-soft badge-primary">
                       {expense.category}
                     </div>
                   </td>
@@ -97,6 +121,71 @@ const GetExpense = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Edit Modal */}
+      <dialog id="expense_modal" className="modal">
+        <div className="modal-box max-w-2xl">
+          <h3 className="font-bold text-xl mb-4">Update Expense</h3>
+          {editData && (
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={editData.title}
+                onChange={(e) =>
+                  setEditData({ ...editData, title: e.target.value })
+                }
+                className="input input-bordered w-full"
+                placeholder="Title"
+              />
+              <input
+                type="number"
+                value={editData.amount}
+                onChange={(e) =>
+                  setEditData({ ...editData, amount: e.target.value })
+                }
+                className="input input-bordered w-full"
+                placeholder="Amount"
+              />
+              <select
+                className="input input-bordered w-full"
+                value={editData.category}
+                onChange={(e) =>
+                  setEditData({ ...editData, category: e.target.value })
+                }
+              >
+                <option value="">{editData.category}</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="date"
+                value={editData.date?.split("T")[0]}
+                onChange={(e) =>
+                  setEditData({ ...editData, date: e.target.value })
+                }
+                className="input input-bordered w-full"
+              />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="btn">Cancel</button>
+            </form>
+            <button
+              className="btn btn-primary"
+              onClick={() => updateMutation.mutate()}
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 };
