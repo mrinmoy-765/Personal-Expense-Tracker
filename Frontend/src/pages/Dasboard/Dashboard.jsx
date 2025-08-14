@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "../../providers/AuthContext";
 import AddExpense from "../../Components/AddExpense";
+import GetExpense from "../../Components/GetExpense";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
@@ -17,6 +18,7 @@ export default function Dashboard() {
       <h1>Name: {user?.username || "Guest"}</h1>
       <h1>{user._id}</h1>
       <AddExpense />
+      <GetExpense />
     </div>
   );
 }

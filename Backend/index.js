@@ -117,6 +117,19 @@ async function run() {
       }
     });
 
+    //get expenses
+    app.get("/getExpenses/:uid", async (req, res) => {
+      const userId = req.params.uid;
+      try {
+        const expenses = await PET_expenseCollection.find({ userId }).toArray();
+
+        res.json(expenses);
+      } catch (err) {
+        console.error("Error fetching expenses", err);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
