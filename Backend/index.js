@@ -1,3 +1,4 @@
+//port bcrypt from "bcrypt";
 const express = require("express");
 //const jwt = require("jsonwebtoken");
 //const cookieParser = require("cookie-parser");
@@ -65,6 +66,33 @@ async function run() {
         });
       } catch (error) {
         console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    //log in user
+    app.post("/login", async (req, res) => {
+      try {
+        const { username, password } = req.body;
+
+        const user = await PET_userCollection.findOne({ username });
+        if (!user) {
+          return res
+            .status(401)
+            .json({ message: "Invalid username or password" });
+        }
+
+        if (password !== user.password) {
+          return res
+            .status(401)
+            .json({ message: "Invalid username or password" });
+        }
+
+        res.json({
+          message: "Login successful",
+          user: { _id: user._id, username: user.username },
+        });
+      } catch (error) {
         res.status(500).json({ message: "Server error" });
       }
     });

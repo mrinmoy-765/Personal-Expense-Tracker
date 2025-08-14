@@ -27,7 +27,7 @@ export default function Registation() {
     },
     onSuccess: () => {
       toast.success("Registration successful");
-      navigate("/login");
+      navigate("/");
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Registration failed!");
